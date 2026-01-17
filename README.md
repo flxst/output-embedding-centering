@@ -4,8 +4,8 @@ This repository contains code to reproduce results from the paper https://arxiv.
 
 ## 0. TL;DR
 
-- Implementation of mu-centering: TODO
-- Implementation of mu-loss: TODO
+- Implementation of mu-centering: [here](https://github.com/flxst/output-embedding-centering/blob/26f4196836ea83f676387acaa953e24bb3cc5f4d/nanoGPT/train.py#L628-L633)
+- Implementation of mu-loss: [here](https://github.com/flxst/output-embedding-centering/blob/26f4196836ea83f676387acaa953e24bb3cc5f4d/nanoGPT/model.py#L247-L253)
 
 ## 1. Structure
 
