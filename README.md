@@ -4,14 +4,14 @@ This repository contains code to reproduce results from the paper https://arxiv.
 
 ## 0. TL;DR
 
-- Implementation of mu-centering: [here](https://github.com/flxst/output-embedding-centering/blob/26f4196836ea83f676387acaa953e24bb3cc5f4d/nanoGPT/train.py#L628-L633)
-- Implementation of mu-loss: [here](https://github.com/flxst/output-embedding-centering/blob/26f4196836ea83f676387acaa953e24bb3cc5f4d/nanoGPT/model.py#L247-L253)
+- Implementation of mu-centering: [here](https://github.com/flxst/output-embedding-centering/blob/48856f23fc737efab60e58c06e82e1c2067a963b/nanoGPT/train.py#L626-L631)
+- Implementation of mu-loss: [here](https://github.com/flxst/output-embedding-centering/blob/48856f23fc737efab60e58c06e82e1c2067a963b/nanoGPT/model.py#L252-L258)
 
 ## 1. Structure
 
 ### Experiments
 
-Our model training code can be found in the folder `nanoGPT`. It is based on [nanoGPT](https://github.com/karpathy/nanoGPT) (commit [7a1614e](https://github.com/EleutherAI/lm-evaluation-harness/commit/7a1614eb90d29b2983ffa027a7974b7ef53fba19)).
+Our model training code can be found in the folder `nanoGPT`. It is based on [nanoGPT](https://github.com/karpathy/nanoGPT) (commit [93a43d9](https://github.com/karpathy/nanogpt/commit/93a43d9a5c22450bbf06e78da2cb6eeef084b717)).
 
 Our changes include (but are not limited to) the use of 
 - FineWeb
@@ -83,11 +83,14 @@ Note:
 - The "Method" variable in the bash scripts corresponds to the mitigation strategy as follows:
 
     | Method | Mitigation Strategy |
-    | ----- | ------------ |
-    | A     | baseline     |
-    | E     | mu-loss      | 
-    | R     | mu-centering |
-    | Z     | z-loss       |
+    | ------ | ------------------- |
+    | A      | baseline            |
+    | E      | mu-loss             | 
+    | R      | mu-centering        |
+    | S      | logit soft-capping  |
+    | Z      | z-loss              |
+
+- The lowercase counterparts (a,e,r,s,z) represent the same mitigation strategies, but in the presence of weight tying.
 
 - W&B logging is turned off by default. To turn it on, change `wandb_log = False` to `wandb_log = True` in the config files and log in to W&B. 
 
@@ -103,6 +106,7 @@ Note:
 The actual results,
 
 - `loss_overview.csv` (main experiments)
+- `loss_overview.wt.csv` (weight tying experiments)
 - `loss_overview_all.csv` (main + hyperparameter sensitivity experiments)
 - `checkpoints`
 
