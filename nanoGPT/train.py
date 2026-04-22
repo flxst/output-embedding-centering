@@ -88,6 +88,7 @@ activation = 'swiglu'
 positional = 'rope'
 weight_tying = False
 z_loss = False
+softcapping = False
 qk_layernorm = True
 final_ln = True
 final_ln_affine = True
@@ -191,7 +192,7 @@ if os.path.exists(meta_path):
 model_args = dict(n_layer=n_layer, n_head=n_head, n_embd=n_embd, block_size=block_size,
                   bias=bias, vocab_size=None, dropout=dropout, 
                   activation=activation, positional=positional, weight_tying=weight_tying,
-                  z_loss=z_loss, qk_layernorm=qk_layernorm,
+                  z_loss=z_loss, softcapping=softcapping, qk_layernorm=qk_layernorm,
                   final_ln=final_ln, final_ln_affine=final_ln_affine,
                   muloss=muloss, gamma=gamma,
                   ) # start with model_args from command line
@@ -437,7 +438,6 @@ while True:
         if not eval_only:
             losses = estimate_loss()
             mu_norms = get_mu_norms()
-            fhs = analyze_final_hidden_states(iterations=final_hidden_states_iterations, only_logits_mean=True)
             print(f"step {iter_num}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
         if wandb_log:
@@ -449,8 +449,6 @@ while True:
                 "mfu": running_mfu*100, # convert to percentage
                 "train/mu_norm_e_input": mu_norms['e_input'],
                 "train/mu_norm_e_output": mu_norms['e_output'],
-                "train/logits_mean_mean": fhs['logits_mean_mean'],
-                "train/logits_mean_std": fhs['logits_mean_std'],
             }
             wandb.log(wandb_dict)
 

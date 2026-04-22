@@ -315,6 +315,8 @@ def get_variant(_exp: str) -> str:
         variant = f'mucentering'
     elif _exp[0] == 'Z':
         variant = f'zloss'
+    elif _exp[0] == 'S':
+        variant = f'softcapping'
 
     # weight tying
     elif _exp[0] == 'a':
@@ -325,6 +327,8 @@ def get_variant(_exp: str) -> str:
         variant = f'mucenteringwt'
     elif _exp[0] == 'z':
         variant = f'zlosswt'
+    elif _exp[0] == 's':
+        variant = f'softcappingwt'
     else:
         raise Exception(f'ERROR! variant = {_exp} unknown.')
 

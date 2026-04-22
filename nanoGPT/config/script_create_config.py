@@ -61,7 +61,8 @@ def parse_input(args: argparse.Namespace) -> Dict[str, Union[float, str]]:
     params['muloss'] = exp[2] in ['E', 'e']
     params['mucentering'] = exp[2] in ['R', 'r']
     params['z_loss'] = exp[2] in ['Z', 'z']
-    params['wt'] = exp[2] in ['a', 'e', 'r', 'z']
+    params['softcapping'] = exp[2] in ['S', 's']
+    params['wt'] = exp[2] in ['a', 'e', 'r', 'z', 's']
     params['variant_str'] = get_variant(exp[2:])
 
     prefix = get_prefix(args.porian, args.wortsman)
@@ -90,6 +91,7 @@ def get_section_types(params: Dict[str, Union[float, str]]) -> List[str]:
     muloss = params['muloss']
     mucentering = params['mucentering']
     z_loss = params['z_loss']
+    softcapping = params['softcapping']
     gamma = params['gamma']
     _lines = [
         "# --- types ---",
@@ -98,6 +100,7 @@ def get_section_types(params: Dict[str, Union[float, str]]) -> List[str]:
         f"muloss = {muloss}",
         f"mucentering = {mucentering}",
         f"z_loss = {z_loss}",
+        f"softcapping = {softcapping}",
         f"gamma = {gamma}",
         ""
     ]

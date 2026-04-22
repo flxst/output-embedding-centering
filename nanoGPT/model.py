@@ -153,6 +153,7 @@ class GPTConfig:
     positional: str = 'rope'
     weight_tying: bool = False
     z_loss: bool = False
+    softcapping: bool = False
     qk_layernorm: bool = False
     final_ln: bool = True
     final_ln_affine: bool = True
@@ -236,6 +237,10 @@ class GPT(nn.Module):
             # if we are given some desired targets also calculate the loss
             # shapes: logits = [B, T, V], logits.view(-1, logits.size(-1)) = [B*T, V]
             logits = self.lm_head(x)  
+
+            if self.config.softcapping is True:
+                logits = self.config.gamma * torch.tanh(logits / self.config.gamma)
+
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
 
             # z-loss

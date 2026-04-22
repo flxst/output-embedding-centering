@@ -78,6 +78,8 @@ def get_input_embeddings_torch(path: str, place: str) -> Embeddings:
             model_path = path.split(".embeddings.npy")[0]
         elif place == 'output_centered':
             model_path = path.split(".embeddings-output_centered.npy")[0]
+        elif place == 'oe':
+            model_path = path.split(".oe.npy")[0]
         else:
             model_path = path.split(".embeddings-input.npy")[0]
         embeddings, _, _, _ = extract_embeddings(model_path, place)

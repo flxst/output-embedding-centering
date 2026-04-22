@@ -160,7 +160,7 @@ def compute_align(path: str, place: str, which: str, kind: str, centered: bool) 
         print(f"..loaded align stats ({which}, {kind}) from file {path}")
     else:
         save_flag = 1
-        embeddings_path = path.replace(f".{which}align{kind}.npy", ".embeddings.npy").replace(f".{which}align{kind}-input.npy", ".embeddings-input.npy").replace(f".{which}align{kind}-output_centered.npy", ".embeddings.npy")
+        embeddings_path = path.replace(f".{which}align{kind}.npy", ".embeddings.npy").replace(f".{which}align{kind}-input.npy", ".embeddings-input.npy").replace(f".{which}align{kind}-output_centered.npy", ".embeddings.npy").replace(f".oe{which}align{kind}.npy", ".oe.npy")
         assert isfile(embeddings_path), f"could not find embeddings at {embeddings_path}"
         e = get_input_embeddings_torch(path=embeddings_path, place=place)
         mean_embedding = np.mean(e.matrix, axis=0, keepdims=True) # [V, H] -> [1, H]
@@ -199,7 +199,7 @@ def compute_mu_norm(path: str, place: str, centered: bool) -> np.array:
         print(f"..loaded mu norms from file {path}")
     else:
         save_flag = 1
-        embeddings_path = path.replace(".munorm.npy", ".embeddings.npy").replace(".munorm-input.npy", ".embeddings-input.npy").replace(f".munorm-output_centered.npy", ".embeddings.npy")
+        embeddings_path = path.replace(".munorm.npy", ".embeddings.npy").replace(".munorm-input.npy", ".embeddings-input.npy").replace(f".munorm-output_centered.npy", ".embeddings.npy").replace(f".oemunorm.npy", ".oe.npy")
         assert isfile(embeddings_path), f"could not find embeddings at {embeddings_path}"
         e = get_input_embeddings_torch(path=embeddings_path, place=place)
         if centered:

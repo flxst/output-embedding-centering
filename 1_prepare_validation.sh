@@ -12,6 +12,12 @@ METHOD=A
 # METHOD=E
 # METHOD=R
 # METHOD=Z
+# METHOD=S
+# METHOD=a
+# METHOD=e
+# METHOD=r
+# METHOD=z
+# METHOD=s
 
 ### 3. PROCESS ###
 if [[ ${SCALE} = '4' ]]; then
@@ -34,6 +40,18 @@ elif [[ ${METHOD} = 'R' ]]; then
   METHOD_STR=mucentering-g0e+00
 elif [[ ${METHOD} = 'Z' ]]; then
   METHOD_STR=zloss-g1e-04
+elif [[ ${METHOD} = 'S' ]]; then
+  METHOD_STR=softcapping-g3e+01
+elif [[ ${METHOD} = 'a' ]]; then
+  METHOD_STR=baselinewt-g0e+00
+elif [[ ${METHOD} = 'e' ]]; then
+  METHOD_STR=mulosswt-g1e-04
+elif [[ ${METHOD} = 'r' ]]; then
+  METHOD_STR=mucenteringwt-g0e+00
+elif [[ ${METHOD} = 'z' ]]; then
+  METHOD_STR=zlosswt-g1e-04
+elif [[ ${METHOD} = 's' ]]; then
+  METHOD_STR=softcappingwt-g3e+01
 fi
 
 ### 4. EXECUTE ###
