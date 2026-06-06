@@ -88,9 +88,10 @@ Note:
     | E      | mu-loss             | 
     | R      | mu-centering        |
     | S      | logit soft-capping  |
+    | W      | weight decay        |
     | Z      | z-loss              |
 
-    The lowercase counterparts (a,e,r,s,z) represent the same mitigation strategies, but in the presence of weight tying.
+    The lowercase counterparts (a,e,r,s,w,z) represent the same mitigation strategies, but in the presence of weight tying.
 
 - W&B logging is turned off by default. To turn it on, change `wandb_log = False` to `wandb_log = True` in the config files and log in to W&B. 
 

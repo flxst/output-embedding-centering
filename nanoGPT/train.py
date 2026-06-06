@@ -94,6 +94,7 @@ final_ln = True
 final_ln_affine = True
 muloss = False
 mucentering = False
+weight_decay_output = False
 gamma = 1.  # a.k.a. lambda
 
 # -----------------------------------------------------------------------------
@@ -194,7 +195,7 @@ model_args = dict(n_layer=n_layer, n_head=n_head, n_embd=n_embd, block_size=bloc
                   activation=activation, positional=positional, weight_tying=weight_tying,
                   z_loss=z_loss, softcapping=softcapping, qk_layernorm=qk_layernorm,
                   final_ln=final_ln, final_ln_affine=final_ln_affine,
-                  muloss=muloss, gamma=gamma,
+                  muloss=muloss, weight_decay_output=weight_decay_output, gamma=gamma,
                   ) # start with model_args from command line
 if init_from == 'scratch':
     # init a new model from scratch

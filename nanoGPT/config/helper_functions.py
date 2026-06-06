@@ -290,7 +290,7 @@ def get_warmup(porian: bool, wortsman: bool, model_size_str: str = '', bs: str =
 
 def get_weight_decay(wortsman: bool) -> tuple[bool, float]:
     if wortsman:
-        independent_weight_decay = False
+        independent_weight_decay = True
         weight_decay = 0.
     else:
         independent_weight_decay = True
@@ -317,6 +317,8 @@ def get_variant(_exp: str) -> str:
         variant = f'zloss'
     elif _exp[0] == 'S':
         variant = f'softcapping'
+    elif _exp[0] == 'W':
+        variant = f'weightdecay'
 
     # weight tying
     elif _exp[0] == 'a':
@@ -329,6 +331,8 @@ def get_variant(_exp: str) -> str:
         variant = f'zlosswt'
     elif _exp[0] == 's':
         variant = f'softcappingwt'
+    elif _exp[0] == 'w':
+        variant = f'weightdecaywt'
     else:
         raise Exception(f'ERROR! variant = {_exp} unknown.')
 

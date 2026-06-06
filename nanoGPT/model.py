@@ -158,6 +158,7 @@ class GPTConfig:
     final_ln: bool = True
     final_ln_affine: bool = True
     muloss: bool = False
+    weight_decay_output: bool = False
     gamma: float = 1.  # a.k.a. lambda
 
 class GPT(nn.Module):
@@ -360,16 +361,37 @@ class GPT(nn.Module):
         param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
         # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
         # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
-        decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-        nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
-        optim_groups = [
-            {'params': decay_params, 'weight_decay': weight_decay},
-            {'params': nodecay_params, 'weight_decay': 0.0}
-        ]
-        num_decay_params = sum(p.numel() for p in decay_params)
-        num_nodecay_params = sum(p.numel() for p in nodecay_params)
-        print(f"num decayed parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
-        print(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
+
+        nodecay_params = [p for _, p in param_dict.items() if p.dim() < 2]
+        if self.config.weight_decay_output is False:
+            decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
+            optim_groups = [
+                {'params': decay_params, 'weight_decay': weight_decay},
+                {'params': nodecay_params, 'weight_decay': 0.0}
+            ]
+            num_decay_params = sum(p.numel() for p in decay_params)
+            num_nodecay_params = sum(p.numel() for p in nodecay_params)
+            print(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
+            print(f"num decayed ({weight_decay:.0e}) parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
+        else:
+            if self.config.weight_tying is False:
+                embedding_suffix = 'lm_head.embedding.weight'
+            else:
+                embedding_suffix = '.wte.weight'
+            decay_params = [p for n, p in param_dict.items() if p.dim() >= 2 and not n.endswith(embedding_suffix)]
+            embedding_params = [p for n, p in param_dict.items() if p.dim() >= 2 and n.endswith(embedding_suffix)]
+            optim_groups = [
+                {'params': decay_params, 'weight_decay': weight_decay},
+                {'params': nodecay_params, 'weight_decay': 0.0},
+                {'params': embedding_params, 'weight_decay': self.config.gamma},
+            ]
+            num_decay_params = sum(p.numel() for p in decay_params)
+            num_nodecay_params = sum(p.numel() for p in nodecay_params)
+            num_embedding_params = sum(p.numel() for p in embedding_params)
+            print(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
+            print(f"num decayed ({weight_decay:.0e}) parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
+            print(f"num decayed ({self.config.gamma:.0e}) embedding parameter tensors: {len(embedding_params)}, with {num_embedding_params:,} parameters")
+
         # Create AdamW optimizer and use the fused version if it is available
         fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
         use_fused = fused_available and device_type == 'cuda'
