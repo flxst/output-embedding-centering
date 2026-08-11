@@ -378,12 +378,12 @@ def get_fhs_dot_prod(output_directory: str, place: str) -> Dict[str, np.array]:
         if place == 'output':
             json_files_fhs_dot_prod = [
                 elem for elem in json_files_fhs_dot_prod
-                if '.pt.dot_input' in elem
+                if '.pt.dot_input' in elem   # BUG! Output and Input are mixed up
             ]
         elif place == 'input':
             json_files_fhs_dot_prod = [
                 elem for elem in json_files_fhs_dot_prod
-                if '.pt.dot_output' in elem
+                if '.pt.dot_output' in elem  # BUG! Output and Input are mixed up
             ]
         if len(json_files_fhs_dot_prod) == 1:
             results_path = join(directory_path, json_files_fhs_dot_prod[0])
