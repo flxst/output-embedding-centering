@@ -20,22 +20,186 @@ COLOR = [v for elem in list(COLOR) for _, v in elem.items()]
 ##############
 # PARAMETERS #
 ##############
+DIVERGED = {
+    ### weight tying = False ###
+    'A': {
+        '4': [False, False, False, False, False, True, True],
+        '6': [False, False, False, False, False, True, True],
+        '8': [False, False, False, False, False, True, True],
+        'A': [False, False, False, False, False, True, True],
+        'C': [False, False, False, False, True, True, True],
+    },
+    'S': {
+        '4': [False, False, False, False, False, False, False],
+        '6': [False, False, False, False, False, False, False],
+        '8': [False, False, False, False, False, False, False],
+        'A': [False, False, False, False, False, False, False],
+        'C': [False, False, False, False, False, False, True],
+    },
+    'W': {
+        '4': [False, False, False, False, False, True, True],
+        '6': [False, False, False, False, False, True, True],
+        '8': [False, False, False, False, False, False, True],
+        'A': [False, False, False, False, True, False, True],
+        'C': [False, False, False, False, False, True, True],
+    },
+    'Z': {
+        '4': [False, False, False, False, False, False, True],
+        '6': [False, False, False, False, False, False, False],
+        '8': [False, False, False, False, False, True, True],
+        'A': [False, False, False, False, False, False, True],
+        'C': [False, False, False, False, False, True, True],
+    },
+    'E': {
+        '4': [False, False, False, False, False, False, False],
+        '6': [False, False, False, False, False, False, False],
+        '8': [False, False, False, False, False, False, False],
+        'A': [False, False, False, False, False, False, False],
+        'C': [False, False, False, False, False, False, False],
+    },
+    'R': {
+        '4': [False, False, False, False, False, False, False],
+        '6': [False, False, False, False, False, False, False],
+        '8': [False, False, False, False, False, False, True],
+        'A': [False, False, False, False, False, False, True],
+        'C': [False, False, False, False, False, False, False],
+    },
+
+
+    ### weight tying = True ###
+    'a': {
+        '4': [False, False, False, False, False, True, True],
+        '6': [False, False, False, False, False, True, True],
+        '8': [False, False, False, False, False, True, True],
+        'A': [False, False, False, False, False, True, True],
+        'C': [False, False, False, False, True, True, True],
+    },
+    's': {
+        '4': [False, False, False, False, False, False, True],
+        '6': [False, False, False, False, False, False, False],
+        '8': [False, False, False, False, False, False, False],
+        'A': [False, False, False, False, False, False, False],
+        'C': [False, False, False, False, False, False, False],
+    },
+    'w': {
+        '4': [False, False, False, False, False, True, True],
+        '6': [False, False, False, False, False, True, True],
+        '8': [False, False, False, False, False, True, True],
+        'A': [False, False, False, False, False, True, True],
+        'C': [False, False, False, False, False, True, True],
+    },
+    'z': {
+        '4': [False, False, False, False, False, False, True],
+        '6': [False, False, False, False, False, False, True],
+        '8': [False, False, False, False, False, True, True],
+        'A': [False, False, False, False, False, True, True],
+        'C': [False, False, False, False, False, True, True],
+    },
+    'e': {
+        '4': [False, False, False, False, False, False, False],
+        '6': [False, False, False, False, False, False, False],
+        '8': [False, False, False, False, False, False, False],
+        'A': [False, False, False, False, False, False, False],
+        'C': [False, False, False, False, False, False, True],
+    },
+    'r': {
+        '4': [False, False, False, False, False, False, True],
+        '6': [False, False, False, False, False, True, False],
+        '8': [False, False, False, False, False, False, True],
+        'A': [False, False, False, False, False, False, True],
+        'C': [False, False, False, False, True, False, True],
+    },
+} 
+
+DIVERGED_E = {
+    1e-07: {
+        '4': [False, False, False, False, False, True, True],
+        '6': [False, False, False, False, False, True, True],
+        '8': [False, False, False, False, False, False, True],
+        'A': [False, False, False, False, False, True, True],
+        'C': [False, False, False, False, False, True, True],
+    },
+    1e-04: {
+        '4': [False, False, False, False, False, False, False],
+        '6': [False, False, False, False, False, False, False],
+        '8': [False, False, False, False, False, False, False],
+        'A': [False, False, False, False, False, True, False],
+        'C': [False, False, False, False, False, False, False]
+    },
+    1e-01: {
+        '4': [False, False, False, False, False, False, False],
+        '6': [False, False, False, False, False, False, False],
+        '8': [False, False, False, False, False, True, True],
+        'A': [False, False, False, False, False, True, False],
+        'C': [False, False, False, False, False, False, False],
+    },
+    1e+02: {
+        '4': [False, False, False, False, False, False, False],
+        '6': [False, False, False, False, False, False, False],
+        '8': [False, False, False, False, False, False, False],
+        'A': [False, False, False, False, False, False, False],
+        'C': [False, False, False, False, False, False, False],
+  },
+}
+DIVERGED_Z = {
+    1e-07: {
+        '4': [False, False, False, False, False, True, True],
+        '6': [False, False, False, False, False, True, True],
+        '8': [False, False, False, False, True, True, True],
+        'A': [False, False, False, False, False, True, True],
+        'C': [False, False, False, False, False, True, True],
+    },
+    1e-04: {
+        '4': [False, False, False, False, False, True, True],
+        '6': [False, False, False, False, False, True, False],
+        '8': [False, False, False, False, False, True, True],
+        'A': [False, False, False, False, False, True, True],
+        'C': [False, False, False, False, False, True, True],
+    },
+    1e-01: {
+        '4': [False, False, False, False, False, False, True],
+        '6': [False, False, False, False, False, False, True],
+        '8': [False, False, False, False, False, False, True],
+        'A': [False, False, False, False, False, False, True],
+        'C': [False, False, False, False, False, False, True],
+    },
+    1e+02: {
+        '4': [True, True, True, True, True, True, True],
+        '6': [True, True, True, True, True, True, True],
+        '8': [True, True, True, True, True, True, True],
+        'A': [True, True, True, True, True, True, True],
+        'C': [True, True, True, True, True, True, True],
+  },
+}
+
 CLR = {
     'A': COLOR[3],
+    'a': COLOR[3],
     'E': COLOR[2],
+    'e': COLOR[2],
     'R': COLOR[1],
+    'r': COLOR[1],
     'Z': COLOR[0],
+    'z': COLOR[0],
     'S': COLOR[6],
+    's': COLOR[6],
     'W': COLOR[4],
+    'w': COLOR[4],
 }
 
 LABEL = {
     'A': 'baseline',
+    'a': 'baseline',
     'E': r'$\mu$-loss',
+    'e': r'$\mu$-loss',
     'R': r'$\mu$-centering',
+    'r': r'$\mu$-centering',
     'Z': 'z-loss',
+    'z': 'z-loss',
     'S': 'soft-capping',
+    's': 'soft-capping',
     'W': 'weight decay',
+    'w': 'weight decay',
 }
 
 MARKER = {
@@ -55,10 +219,10 @@ NLABEL = {
 }
 
 LINESTYLE = {
-    '4': ':',
-    '6': '--',
-    '8': '-.',
-    'A': '-',
+    '4': (0, (1, 4)),
+    '6': (0, (1, 2)),
+    '8': '--',
+    'A': '-.',
     'C': '-',
 }
 
@@ -90,6 +254,10 @@ YLABEL = {
     'mean_norm_hratio': r'$\overline{\| h^r \|}$',
     'mean_logsqZ': r'$\log^2 (Z)$',
     'time': r'$t [s]$',
+    'r_emb': r'$r_{\rm emb}$',
+    'r_cos': r'$r_{\rm cos}$',
+    'r_log': r'$r_{\rm log}$',
+    'cos_mu_h': r'$\cos \left( \mu, h \right)$',
 }
 
 ##############
@@ -102,7 +270,23 @@ def get_label(variant, _lambda):
     return label
 
 
-def plot_wortsman(_lrs, _loss, quantity, ns, variants_lambdas, ylim=None, legend=False, alpha=False, details=False, save_as=''):
+def extract_quantity_wortsman(_df_all, _lrs, quantity, variant, lr_integer=False):
+    
+    def lr2integer(lr_integer, lr):
+        if lr_integer is True:
+            return int(np.ceil(10000*lr))
+        else:
+            return lr
+            
+    _dict = _df_all.groupby(["model_size", "lr"])[quantity].mean().to_dict()
+    _quantity = {
+        model_size: {variant: {0.0: [_dict[model_size, lr2integer(lr_integer, elem)] for elem in _lrs]}}
+        for model_size in ['4', '6', '8', 'A', 'C']
+    }
+    return _quantity
+
+
+def plot_wortsman(_lrs, _loss, quantity, ns, variants_lambdas, ylim=None, legend=False, line=None, alpha=False, details=False, diverged=None, save_as=''):
     """
     Args:
         _lrs: e.g. [0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3]
@@ -125,16 +309,19 @@ def plot_wortsman(_lrs, _loss, quantity, ns, variants_lambdas, ylim=None, legend
         }
         quantity: e.g. 'test_loss'
         ns: e.g. ['4', '6', '8', 'A', 'C']
-        variants_lambda: e.g. VARIANTS_LAMBDAS = {'A': [0.0], 'W': [0.0001], 'S': [30.0], 'Z': [0.0001], 'E': [0.0001], 'R': [0.0]}
+        variants_lambdas: e.g. VARIANTS_LAMBDAS = {'A': [0.0], 'W': [0.0001], 'S': [30.0], 'Z': [0.0001], 'E': [0.0001], 'R': [0.0]}
         ylim: e.g. (2.9, 5.2)
     """
     if details is True:
         NR_PLOTS = 6
-        fix, ax = plt.subplots(1, NR_PLOTS, figsize=(14,4), width_ratios=[4, 1, 1, 1, 1, 1])
+        _, ax = plt.subplots(1, NR_PLOTS, figsize=(14,4), width_ratios=[4, 1, 1, 1, 1, 1])
     else:
         NR_PLOTS = 1
-        fix, ax = plt.subplots(1, NR_PLOTS, figsize=(6,4))
+        _, ax = plt.subplots(1, NR_PLOTS, figsize=(6,4))
         ax = [ax, None]
+
+    if line is not None:
+        _ = ax[0].plot(_lrs, [line]*len(_lrs), linestyle='-', marker='', color='k')
 
     for i in range(NR_PLOTS):
         ax[i].set_xscale('log')
@@ -148,9 +335,28 @@ def plot_wortsman(_lrs, _loss, quantity, ns, variants_lambdas, ylim=None, legend
                         marker=MARKER[n], 
                         linestyle=LINESTYLE[n],
                         color=CLR[variant], 
+                        markerfacecolor='w',
                         label=get_label(variant, _lambda) if n == ns[0] else None,
                         alpha=ALPHA[_lambda] if alpha is True else 1,
                     )
+                    if diverged is not None:
+                        try:  
+                            _diverged = diverged[variant]  # DIVERGED
+                        except KeyError:  
+                            _diverged = diverged[_lambda]  # DIVERGED_E, DIVERGED_Z 
+                        
+                        _lrs_diverged = [elem for div, elem in zip(_diverged[n], _lrs) if div is True]
+                        y_diverged = [elem for div, elem in zip(_diverged[n], _loss[n][variant][_lambda]) if div is True]
+                        ax[0].plot(
+                            _lrs_diverged, 
+                            y_diverged, 
+                            marker=MARKER[n], 
+                            linestyle='',
+                            color=CLR[variant], 
+                            markerfacecolor=CLR[variant], 
+                            # label=get_label(variant, _lambda) if n == ns[0] else None,
+                            alpha=ALPHA[_lambda] if alpha is True else 1,
+                        )
                     if details is True:
                         ax[1+counter].plot(
                             _lrs, 
@@ -158,13 +364,26 @@ def plot_wortsman(_lrs, _loss, quantity, ns, variants_lambdas, ylim=None, legend
                             marker=MARKER[n], 
                             linestyle=LINESTYLE[n],
                             color=CLR[variant], 
+                            markerfacecolor='w', 
                             label=get_label(variant, _lambda) if n == ns[0] else None,
                             alpha=ALPHA[_lambda] if alpha is True else 1,
                         )
+                        if diverged is not None:
+                            ax[1+counter].plot(
+                                _lrs_diverged, 
+                                y_diverged, 
+                                marker=MARKER[n], 
+                                linestyle='',
+                                color=CLR[variant], 
+                                markerfacecolor=CLR[variant], 
+                                # label=get_label(variant, _lambda) if n == ns[0] else None,
+                                alpha=ALPHA[_lambda] if alpha is True else 1,
+                            )
                 else:
                     print(f'ERROR! could not plot lambda = {_lambda} for n = {n} & variant = {variant}.')
+
     if legend is True:
-        ax[0].legend()
+        ax[0].legend(fontsize='small')  # loc='upper left'
     if ylim is not None:
         for i in range(NR_PLOTS):
             ax[i].set_ylim(ylim)
@@ -184,7 +403,7 @@ def plot_wortsman(_lrs, _loss, quantity, ns, variants_lambdas, ylim=None, legend
         print(f'> saved as {fig_path}')
 
 
-def plot_lr_sensitivity(_lr_sensitivity, model_size, ns, variants_lambdas, ylim = None, legend = False, alpha = False, save_as = ''):
+def plot_lr_sensitivity(_lr_sensitivity, model_size, ns, variants_lambdas, ylim=None, legend=False, alpha=False, diverged=None, save_as=''):
     """
     Args:
         _lr_sensitivity: e.g. {
@@ -211,21 +430,37 @@ def plot_lr_sensitivity(_lr_sensitivity, model_size, ns, variants_lambdas, ylim 
                 ax[0].loglog(
                     x, 
                     y, 
-                    marker='.', 
+                    marker='', 
                     linestyle='--', 
-                    color=CLR[variant], 
+                    color=CLR[variant],
                     label=get_label(variant, _lambda),
                     alpha=ALPHA[_lambda] if alpha is True else 1,
                 )
                 for i, (n, elem_x, elem_y) in enumerate(zip(ns, x, y)):
-                   ax[0].loglog(
-                    elem_x, 
-                    elem_y, 
-                    marker=MARKER[n], 
-                    linestyle='', 
-                    color=CLR[variant], 
-                    alpha=ALPHA[_lambda] if alpha is True else 1,
-                ) 
+                    ax[0].loglog(
+                        elem_x, 
+                        elem_y, 
+                        marker=MARKER[n], 
+                        linestyle='', 
+                        color=CLR[variant], 
+                        markerfacecolor='w', 
+                        alpha=ALPHA[_lambda] if alpha is True else 1,
+                    ) 
+                    if diverged is not None:
+                        try:
+                            diverged_elem = sum(diverged[variant][ns[i]]) > 0.5  # DIVERGED
+                        except KeyError:
+                            diverged_elem = sum(diverged[_lambda][ns[i]]) > 0.5  # DIVERGED_E, DIVERGED_Z
+                        if diverged_elem:
+                            ax[0].loglog(
+                                elem_x, 
+                                elem_y, 
+                                marker=MARKER[n], 
+                                linestyle='', 
+                                color=CLR[variant], 
+                                markerfacecolor=CLR[variant], 
+                                # alpha=ALPHA[_lambda] if alpha is True else 1,
+                            ) 
             else:
                 print(f'ERROR! could not plot lambda = {_lambda} for variant = {variant}.')
     if legend is True:
