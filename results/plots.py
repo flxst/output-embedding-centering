@@ -265,7 +265,7 @@ YLABEL = {
 ##############
 def get_label(variant, _lambda):
     label = LABEL[variant]
-    if variant in ['E', 'S', 'Z', 'W']:
+    if variant in ['E', 'S', 'Z', 'W', 'e', 's', 'z', 'w']:
         label = f'{label} ({_lambda:.0e})'.replace("-0", "-").replace("+0", "+")
     return label
 
@@ -383,7 +383,7 @@ def plot_wortsman(_lrs, _loss, quantity, ns, variants_lambdas, ylim=None, legend
                     print(f'ERROR! could not plot lambda = {_lambda} for n = {n} & variant = {variant}.')
 
     if legend is True:
-        ax[0].legend(fontsize='small')  # loc='upper left'
+        ax[0].legend(fontsize='small', loc='upper left')
     if ylim is not None:
         for i in range(NR_PLOTS):
             ax[i].set_ylim(ylim)
@@ -430,7 +430,7 @@ def plot_lr_sensitivity(_lr_sensitivity, model_size, ns, variants_lambdas, ylim=
                 ax[0].loglog(
                     x, 
                     y, 
-                    marker='', 
+                    marker='.', 
                     linestyle='--', 
                     color=CLR[variant],
                     label=get_label(variant, _lambda),
@@ -464,7 +464,7 @@ def plot_lr_sensitivity(_lr_sensitivity, model_size, ns, variants_lambdas, ylim=
             else:
                 print(f'ERROR! could not plot lambda = {_lambda} for variant = {variant}.')
     if legend is True:
-        ax[0].legend()
+        ax[0].legend(loc='upper right', fontsize='small', bbox_to_anchor=(1.43, 1))
     
     ax[0].set_xlabel(r'$N$')
     ax[0].set_ylabel('LRS')
