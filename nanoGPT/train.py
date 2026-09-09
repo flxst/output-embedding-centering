@@ -294,6 +294,9 @@ def analyze_final_hidden_states(iterations: int, only_logits_mean: bool = False)
         emean_input = torch.mean(raw_model.transformer.wte.weight, dim=0)  # [V, H] -> [H] 
         emean_output = torch.mean(raw_model.lm_head.embedding.weight, dim=0)  # [V, H] -> [H] 
 
+    mu_hat = emean_output / torch.linalg.vector_norm(emean_output)  # [H]
+    mu_hat = torch.unsqueeze(mu_hat, 1) # [H, 1]
+
     # final hidden state
     def compute_mean_logsqZ(_logits):
         # shapes: 
@@ -305,13 +308,15 @@ def analyze_final_hidden_states(iterations: int, only_logits_mean: bool = False)
 
     split = 'val'
 
+    E = raw_model.lm_head.embedding.weight  # [V, H]
+
     # aggregate batches -> fhs (=final hidden states), lgt (=logits)
     for k in range(iterations):
         X, Y = get_batch(split)
         with ctx:
             h = raw_model.get_final_hidden_states(X)         # [B, T, H]
+            Eh = h @ E.T                                     # [B, T, V]
             h = h.view(-1, h.size(-1))                       # [B*T, H]
-            Eh = h @ raw_model.lm_head.embedding.weight.T    # [B, T, V]
             Eh = Eh.view(-1, Eh.size(-1))                    # [B*T, V]
         if k == 0:
             fhs = h   # [B*T, H]
@@ -319,6 +324,8 @@ def analyze_final_hidden_states(iterations: int, only_logits_mean: bool = False)
         else:
             fhs = torch.cat((fhs, h), axis=0)   # [k*B*T, H]
             lgt = torch.cat((lgt, Eh), axis=0)  # [k*B*T, V]
+
+    del h, Eh
 
     if DEBUG is True:
         print(f'fhs.shape={fhs.shape}')
@@ -350,11 +357,11 @@ def analyze_final_hidden_states(iterations: int, only_logits_mean: bool = False)
         out['dot_input'] = torch.dot(emean_input, hmean)     # []
         out['dot_output'] = torch.dot(emean_output, hmean)   # []
         out['mean_logsqZ'] = mean_logsqZ                     # []
-        emean_input = torch.unsqueeze(emean_input, dim=0)    # [1, H]
-        emean_output = torch.unsqueeze(emean_output, dim=0)  # [1, H]
+        _emean_input = torch.unsqueeze(emean_input, dim=0)   # [1, H]
+        _emean_output = torch.unsqueeze(emean_output, dim=0) # [1, H]
         hmean = torch.unsqueeze(hmean, dim=0)                # [1, H]
-        out['cos_input'] = torch.squeeze(F.cosine_similarity(emean_input, hmean))    # []
-        out['cos_output'] = torch.squeeze(F.cosine_similarity(emean_output, hmean))  # []
+        out['cos_input'] = torch.squeeze(F.cosine_similarity(_emean_input, hmean))    # []
+        out['cos_output'] = torch.squeeze(F.cosine_similarity(_emean_output, hmean))  # []
 
     out['logits_mean_mean'] = logits_mean_mean               # []
     out['logits_mean_std'] = logits_mean_std                 # []
@@ -362,6 +369,59 @@ def analyze_final_hidden_states(iterations: int, only_logits_mean: bool = False)
     out['logits_std_std'] = logits_std_std                   # []
     out['logits_mean_absmean'] = logits_mean_absmean         # []
     out['logits_mean_absmax'] = logits_mean_absmax           # []
+
+    # projections lgt
+    lgt_min = torch.amin(lgt, dim=1, keepdims=True)        # [k*B*T, V] -> [k*B*T, 1]
+    lgt_max = torch.amax(lgt, dim=1, keepdims=True)        # [k*B*T, V] -> [k*B*T, 1]
+    lgt_mean = fhs @ torch.unsqueeze(emean_output, dim=1)  # [k*B*T, H] x [H, 1] -> [k*B*T, 1]
+
+    fhs_normalized = fhs / torch.linalg.vector_norm(fhs, dim=1, keepdim=True)  # [k*B*T, H]
+    lgt_mean_cos = fhs_normalized @ mu_hat  # [k*B*T, H] x [H, 1] -> [k*B*T, 1]
+
+    B_minus = - (lgt_min - lgt_mean) # [k*B*T, 1]
+    B_plus = lgt_max - lgt_mean      # [k*B*T, 1]
+
+    B_ratio_nominator = torch.amax(torch.cat((B_minus, B_plus), 1), dim=1, keepdims=False)      # [k*B*T] 
+    B_ratio_denominator = torch.amax(torch.cat((-lgt_min, lgt_max), 1), dim=1, keepdims=False)  # [k*B*T] 
+    B_ratio = B_ratio_nominator / B_ratio_denominator                                           # [k*B*T]
+
+    del fhs_normalized
+
+    # c & c_star
+    idx = torch.arange(start=0, end=B_ratio.shape[0], step=1, dtype=torch.int)          # [k*B*T]
+    h_norm = torch.linalg.vector_norm(fhs, dim=1, keepdim=False, dtype=torch.float)     # [k*B*T, H] -> [k*B*T]
+    del fhs
+
+    # c
+    _lgt_max, lgt_max_vocab_idx = torch.max(torch.abs(lgt), dim=1, keepdim=False)  # [k*B*T, V] -> [k*B*T], [k*B*T]
+    E_norm = torch.linalg.vector_norm(E, dim=1, keepdim=False, dtype=torch.float)       # [V, H] -> [V]
+    E_norms = torch.zeros(_lgt_max.shape[0], dtype=E_norm.dtype, device=E_norm.device)       # [k*B*T]
+    E_norms[idx] = E_norm[lgt_max_vocab_idx[idx]] # [k*B*T]
+    c = _lgt_max / h_norm / E_norms                  # [k*B*T] / [k*B*T] / [k*B*T]
+    del _lgt_max, lgt_max_vocab_idx, E_norm, E_norms
+
+    # c_star
+    lgt = lgt - lgt_mean
+    lgt_max_star, lgt_max_vocab_idx_star = torch.max(torch.abs(lgt), dim=1, keepdim=False)  # [k*B*T, V] -> [k*B*T], [k*B*T]
+
+    E_norm_star = torch.linalg.vector_norm(E - emean_output, dim=1, keepdim=False, dtype=torch.float)  # [V, H] - [H] = [V, H] -> [V]
+    E_norms_star = torch.zeros(lgt_max.shape[0], dtype=E_norm_star.dtype, device=E_norm_star.device)  # [k*B*T]
+    E_norms_star[idx] = E_norm_star[lgt_max_vocab_idx_star[idx]] # [k*B*T]
+
+    c_star = lgt_max_star / h_norm / E_norms_star   # [k*B*T] / [k*B*T] / [k*B*T]
+    
+    del lgt_max_star, lgt_max_vocab_idx_star, E_norm_star, E_norms_star
+
+    out['lgt_min'] = torch.squeeze(lgt_min) # [k*B*T]
+    out['lgt_max'] = torch.squeeze(lgt_max) # [k*B*T]
+    out['lgt_mean'] = torch.squeeze(lgt_mean) # [k*B*T]
+    out['lgt_mean_cos'] = torch.squeeze(lgt_mean_cos) # [k*B*T]
+    out['B_ratio_nominator'] = B_ratio_nominator # [k*B*T]
+    out['B_ratio_denominator'] = B_ratio_denominator # [k*B*T]
+    out['B_ratio'] = B_ratio # [k*B*T]
+
+    out['c'] = c # [k*B*T]
+    out['c_star'] = c_star # [k*B*T]
 
     if DEBUG is True:
         print("output:")
@@ -489,110 +549,138 @@ while True:
             print(f"> wrote val_loss to file {val_loss_path}")
 
         # final hidden states: cosine similarity, dot product & z-loss
+        def print_and_save_npy(_fhs, _key, _batches, _init_directory, _init_checkpoint):
+            print("\n============================================================")
+            print(f"> min({_key}), mean({_key}), max({_key}) ON {_batches} BATCHES: {np.min(_fhs[_key]):.4f}, {np.mean(_fhs[_key]):.4f}, {np.max(_fhs[_key]):.4f}")
+            print("============================================================")
+            npy_path = os.path.join(
+                _init_directory, 
+                f"{_init_checkpoint}.{_key}.npy"
+            )
+            with open(npy_path, 'wb') as f:
+                np.save(f, _fhs[_key])
+            print(f"> wrote npy for {key} to file {npy_path}")
+
         fhs = analyze_final_hidden_states(iterations=final_hidden_states_iterations)
         if master_process:
-            for position in ['input', 'output']:
-                key = f'cos_{position}'
+            if 1:
+                keys = [
+                    'B_ratio_nominator',
+                    'B_ratio_denominator',
+                    'B_ratio',
+                    'lgt_min',
+                    'lgt_mean',
+                    'lgt_mean_cos',
+                    'lgt_max',
+                    'c',
+                    'c_star',
+                ]
+                for key in keys:
+                    print_and_save_npy(fhs, key, final_hidden_states_iterations, init_directory, init_checkpoint)
+
+            else:
+                for position in ['input', 'output']:
+                    key = f'cos_{position}'
+                    print("\n============================================================")
+                    print(f"> COSINE SIMILARITY MU(e_{position}, h) ON {final_hidden_states_iterations} BATCHES: {fhs[key]:.4f}")
+                    print("============================================================")
+                    cos_path = os.path.join(
+                        init_directory, 
+                        f"{init_checkpoint}.{key}.npy"
+                    )
+                    with open(cos_path, 'wb') as f:
+                        np.save(f, fhs[key])
+                    print(f"> wrote cos ({position}) to file {cos_path}")
+
+                for position in ['input', 'output']:
+                    key = f'dot_{position}'
+                    print("\n============================================================")
+                    print(f"> DOT PRODUCT MU(e_{position}, h) ON {final_hidden_states_iterations} BATCHES: {fhs[key]:.4f}")
+                    print("============================================================")
+                    dot_path = os.path.join(
+                        init_directory, 
+                        f"{init_checkpoint}.{key}.npy"
+                    )
+                    with open(dot_path, 'wb') as f:
+                        np.save(f, fhs[key])
+                    print(f"> wrote dot ({position}) to file {dot_path}")
+
                 print("\n============================================================")
-                print(f"> COSINE SIMILARITY MU(e_{position}, h) ON {final_hidden_states_iterations} BATCHES: {fhs[key]:.4f}")
+                print(f"> logits_mean_mean ON {final_hidden_states_iterations} BATCHES: {fhs['logits_mean_mean']:.4f}")
                 print("============================================================")
-                cos_path = os.path.join(
+                logits_mean_mean_path = os.path.join(
                     init_directory, 
-                    f"{init_checkpoint}.{key}.npy"
+                    f"{init_checkpoint}.logits_mean_mean.npy"
                 )
-                with open(cos_path, 'wb') as f:
-                    np.save(f, fhs[key])
-                print(f"> wrote cos ({position}) to file {cos_path}")
+                with open(logits_mean_mean_path, 'wb') as f:
+                    np.save(f, fhs['logits_mean_mean'])
+                print(f"> wrote logits_mean_mean to file {logits_mean_mean_path}")
 
-            for position in ['input', 'output']:
-                key = f'dot_{position}'
                 print("\n============================================================")
-                print(f"> DOT PRODUCT MU(e_{position}, h) ON {final_hidden_states_iterations} BATCHES: {fhs[key]:.4f}")
+                print(f"> logits_mean_std ON {final_hidden_states_iterations} BATCHES: {fhs['logits_mean_std']:.4f}")
                 print("============================================================")
-                dot_path = os.path.join(
+                logits_mean_std_path = os.path.join(
                     init_directory, 
-                    f"{init_checkpoint}.{key}.npy"
+                    f"{init_checkpoint}.logits_mean_std.npy"
                 )
-                with open(dot_path, 'wb') as f:
-                    np.save(f, fhs[key])
-                print(f"> wrote dot ({position}) to file {dot_path}")
+                with open(logits_mean_std_path, 'wb') as f:
+                    np.save(f, fhs['logits_mean_std'])
+                print(f"> wrote logits_mean_std to file {logits_mean_std_path}")
 
-            print("\n============================================================")
-            print(f"> logits_mean_mean ON {final_hidden_states_iterations} BATCHES: {fhs['logits_mean_mean']:.4f}")
-            print("============================================================")
-            logits_mean_mean_path = os.path.join(
-                init_directory, 
-                f"{init_checkpoint}.logits_mean_mean.npy"
-            )
-            with open(logits_mean_mean_path, 'wb') as f:
-                np.save(f, fhs['logits_mean_mean'])
-            print(f"> wrote logits_mean_mean to file {logits_mean_mean_path}")
+                print("\n============================================================")
+                print(f"> logits_std_mean ON {final_hidden_states_iterations} BATCHES: {fhs['logits_std_mean']:.4f}")
+                print("============================================================")
+                logits_std_mean_path = os.path.join(
+                    init_directory, 
+                    f"{init_checkpoint}.logits_std_mean.npy"
+                )
+                with open(logits_std_mean_path, 'wb') as f:
+                    np.save(f, fhs['logits_std_mean'])
+                print(f"> wrote logits_std_mean to file {logits_std_mean_path}")
 
-            print("\n============================================================")
-            print(f"> logits_mean_std ON {final_hidden_states_iterations} BATCHES: {fhs['logits_mean_std']:.4f}")
-            print("============================================================")
-            logits_mean_std_path = os.path.join(
-                init_directory, 
-                f"{init_checkpoint}.logits_mean_std.npy"
-            )
-            with open(logits_mean_std_path, 'wb') as f:
-                np.save(f, fhs['logits_mean_std'])
-            print(f"> wrote logits_mean_std to file {logits_mean_std_path}")
+                print("\n============================================================")
+                print(f"> logits_std_std ON {final_hidden_states_iterations} BATCHES: {fhs['logits_std_std']:.4f}")
+                print("============================================================")
+                logits_std_std_path = os.path.join(
+                    init_directory, 
+                    f"{init_checkpoint}.logits_std_std.npy"
+                )
+                with open(logits_std_std_path, 'wb') as f:
+                    np.save(f, fhs['logits_std_std'])
+                print(f"> wrote logits_std_std to file {logits_std_std_path}")
 
-            print("\n============================================================")
-            print(f"> logits_std_mean ON {final_hidden_states_iterations} BATCHES: {fhs['logits_std_mean']:.4f}")
-            print("============================================================")
-            logits_std_mean_path = os.path.join(
-                init_directory, 
-                f"{init_checkpoint}.logits_std_mean.npy"
-            )
-            with open(logits_std_mean_path, 'wb') as f:
-                np.save(f, fhs['logits_std_mean'])
-            print(f"> wrote logits_std_mean to file {logits_std_mean_path}")
+                print("\n============================================================")
+                print(f"> logits_mean_absmean ON {final_hidden_states_iterations} BATCHES: {fhs['logits_mean_absmean']:.4f}")
+                print("============================================================")
+                logits_mean_absmean_path = os.path.join(
+                    init_directory, 
+                    f"{init_checkpoint}.logits_mean_absmean.npy"
+                )
+                with open(logits_mean_absmean_path, 'wb') as f:
+                    np.save(f, fhs['logits_mean_absmean'])
+                print(f"> wrote logits_mean_absmean to file {logits_mean_absmean_path}")
 
-            print("\n============================================================")
-            print(f"> logits_std_std ON {final_hidden_states_iterations} BATCHES: {fhs['logits_std_std']:.4f}")
-            print("============================================================")
-            logits_std_std_path = os.path.join(
-                init_directory, 
-                f"{init_checkpoint}.logits_std_std.npy"
-            )
-            with open(logits_std_std_path, 'wb') as f:
-                np.save(f, fhs['logits_std_std'])
-            print(f"> wrote logits_std_std to file {logits_std_std_path}")
+                print("\n============================================================")
+                print(f"> logits_mean_absmax ON {final_hidden_states_iterations} BATCHES: {fhs['logits_mean_absmax']:.4f}")
+                print("============================================================")
+                logits_mean_absmax_path = os.path.join(
+                    init_directory, 
+                    f"{init_checkpoint}.logits_mean_absmax.npy"
+                )
+                with open(logits_mean_absmax_path, 'wb') as f:
+                    np.save(f, fhs['logits_mean_absmax'])
+                print(f"> wrote logits_mean_absmax to file {logits_mean_absmax_path}")
 
-            print("\n============================================================")
-            print(f"> logits_mean_absmean ON {final_hidden_states_iterations} BATCHES: {fhs['logits_mean_absmean']:.4f}")
-            print("============================================================")
-            logits_mean_absmean_path = os.path.join(
-                init_directory, 
-                f"{init_checkpoint}.logits_mean_absmean.npy"
-            )
-            with open(logits_mean_absmean_path, 'wb') as f:
-                np.save(f, fhs['logits_mean_absmean'])
-            print(f"> wrote logits_mean_absmean to file {logits_mean_absmean_path}")
-
-            print("\n============================================================")
-            print(f"> logits_mean_absmax ON {final_hidden_states_iterations} BATCHES: {fhs['logits_mean_absmax']:.4f}")
-            print("============================================================")
-            logits_mean_absmax_path = os.path.join(
-                init_directory, 
-                f"{init_checkpoint}.logits_mean_absmax.npy"
-            )
-            with open(logits_mean_absmax_path, 'wb') as f:
-                np.save(f, fhs['logits_mean_absmax'])
-            print(f"> wrote logits_mean_absmax to file {logits_mean_absmax_path}")
-
-            print("\n============================================================")
-            print(f"> mean_logsqZ ON {final_hidden_states_iterations} BATCHES: {fhs['mean_logsqZ']:.4f}")
-            print("============================================================")
-            mean_logsqZ_path = os.path.join(
-                init_directory, 
-                f"{init_checkpoint}.mean_logsqZ.npy"
-            )
-            with open(mean_logsqZ_path, 'wb') as f:
-                np.save(f, fhs['mean_logsqZ'])
-            print(f"> wrote mean_logsqZ to file {mean_logsqZ_path}")
+                print("\n============================================================")
+                print(f"> mean_logsqZ ON {final_hidden_states_iterations} BATCHES: {fhs['mean_logsqZ']:.4f}")
+                print("============================================================")
+                mean_logsqZ_path = os.path.join(
+                    init_directory, 
+                    f"{init_checkpoint}.mean_logsqZ.npy"
+                )
+                with open(mean_logsqZ_path, 'wb') as f:
+                    np.save(f, fhs['mean_logsqZ'])
+                print(f"> wrote mean_logsqZ to file {mean_logsqZ_path}")
 
         break
 
